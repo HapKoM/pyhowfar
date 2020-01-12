@@ -9,7 +9,7 @@ from skimage import io
 
 import torch
 
-from torch.utils.serialization import load_lua
+import torchfile
 
 # from utils.utils import *
 from utils.imutils import *
@@ -52,7 +52,7 @@ class LS3DW(W300LP):
         sf = self.scale_factor
         rf = self.rot_factor
 
-        main_pts = load_lua(self.anno[idx])
+        main_pts = torchfile.load(self.anno[idx])
         pts = main_pts
         mins_ = torch.min(pts, 0)[0].view(2)  # min vals
         maxs_ = torch.max(pts, 0)[0].view(2)  # max vals

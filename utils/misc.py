@@ -20,6 +20,8 @@ def to_numpy(tensor):
 def to_torch(ndarray):
     if type(ndarray).__module__ == 'numpy':
         return torch.from_numpy(ndarray)
+    elif type(ndarray).__module__ == 'imageio.core.util':
+        return torch.from_numpy(np.asarray(ndarray))
     elif not torch.is_tensor(ndarray):
         raise ValueError("Cannot convert {} to torch tensor".format(type(ndarray)))
     return ndarray

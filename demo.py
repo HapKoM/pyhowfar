@@ -2,7 +2,7 @@ import os
 import torch
 import matplotlib
 matplotlib.use('Agg')
-from torch.utils.serialization import load_lua
+import torchfile
 import numpy as np
 import os.path as osp
 import scipy.io as sio
@@ -34,9 +34,9 @@ def loadgts(datapath, pointType='2D'):
         all_gts = torch.zeros((len(lines), 68, 2))
         for i, f in enumerate(lines):
             if pointType == '2D':
-                pts = load_lua(osp.join(base_dir, f.split('_')[0], f[:-4] + '.t7'))[0]
+                pts = torchfile.load(osp.join(base_dir, f.split('_')[0], f[:-4] + '.t7'))[0]
             else:
-                pts = load_lua(osp.join(base_dir, f.split('_')[0], f[:-4] + '.t7'))[1]
+                pts = torchfile.load(osp.join(base_dir, f.split('_')[0], f[:-4] + '.t7'))[1]
             all_gts[i, :, :] = pts
         return all_gts, lines
 
@@ -71,12 +71,12 @@ def loadgts(datapath, pointType='2D'):
     for i, f in enumerate(lines):
         if pointType == '2D':
             if datapath.endswith('300W_LP'):
-                pts = load_lua(osp.join(base_dir, f.split('_')[0], f[:-4] + '.t7'))[0]
+                pts = torchfile.load(osp.join(base_dir, f.split('_')[0], f[:-4] + '.t7'))[0]
             else:
                 print("Given data set do not have 3D annotations.")
                 exit()
         else:
-            pts = load_lua(f)
+            pts = torchfile.load(f)
         all_gts[i, :, :] = pts
     print('Loaded {} sample from {}'.format(len(lines), base_dir))
 

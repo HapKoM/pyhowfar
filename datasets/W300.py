@@ -8,7 +8,7 @@ from skimage import io
 
 import torch
 import torch.utils.data as data
-from torch.utils.serialization import load_lua
+import torchfile
 
 # from utils.utils import *
 from utils.imutils import *
@@ -70,7 +70,7 @@ class W300(data.Dataset):
         sf = self.scale_factor
         rf = self.rot_factor
 
-        main_pts = load_lua(
+        main_pts = torchfile.load(
             os.path.join(self.img_folder, 'landmarks', self.anno[idx].split('_')[0],
                          self.anno[idx][:-4] + '.t7'))
         pts = main_pts[0] if self.pointType == '2D' else main_pts[1]

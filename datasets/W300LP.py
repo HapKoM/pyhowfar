@@ -8,7 +8,7 @@ from skimage import io
 
 import torch
 import torch.utils.data as data
-from torch.utils.serialization import load_lua
+import torchfile
 
 # from utils.utils import *
 from utils.imutils import *
@@ -20,6 +20,8 @@ class W300LP(data.Dataset):
     def __init__(self, args, split):
         self.nParts = 68
         self.pointType = args.pointType
+        self.imsize = int(args.imsize)
+        print("W300LP imsize = ", self.imsize)
         # self.anno = anno
         self.img_folder = args.data
         self.split = split
@@ -65,7 +67,7 @@ class W300LP(data.Dataset):
         sf = self.scale_factor
         rf = self.rot_factor
 
-        main_pts = load_lua(
+        main_pts = torchfile.load(
             os.path.join(self.img_folder, 'landmarks', self.anno[idx].split('_')[0],
                          self.anno[idx][:-4] + '.t7'))
         pts = main_pts[0] if self.pointType == '2D' else main_pts[1]
@@ -90,14 +92,14 @@ class W300LP(data.Dataset):
             img[1, :, :].mul_(random.uniform(0.7, 1.3)).clamp_(0, 1)
             img[2, :, :].mul_(random.uniform(0.7, 1.3)).clamp_(0, 1)
 
-        inp = crop(img, c, s, [256, 256], rot=r)
+        inp = crop(img, c, s, [self.imsize, self.imsize], rot=r)
         # inp = color_normalize(inp, self.mean, self.std)
 
-        tpts = pts.clone()
-        out = torch.zeros(self.nParts, 64, 64)
+        tpts = pts.copy()
+        out = torch.zeros(self.nParts, self.imsize // 4, self.imsize // 4)
         for i in range(self.nParts):
             if tpts[i, 0] > 0:
-                tpts[i, 0:2] = to_torch(transform(tpts[i, 0:2] + 1, c, s, [64, 64], rot=r))
+                tpts[i, 0:2] = to_torch(transform(tpts[i, 0:2] + 1, c, s, [self.imsize // 4, self.imsize // 4], rot=r))
                 out[i] = draw_labelmap(out[i], tpts[i] - 1, sigma=1)
 
         return inp, out, pts, c, s

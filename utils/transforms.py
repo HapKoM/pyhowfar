@@ -3,8 +3,11 @@ from __future__ import absolute_import
 import os
 import numpy as np
 import scipy.misc
+import skimage
 import matplotlib.pyplot as plt
+import skimage.transform as st
 import torch
+from PIL import Image
 
 from .misc import *
 from .imutils import *
@@ -59,7 +62,7 @@ def shufflelr(x, width, dataset='mpii'):
 
     # Change left-right parts
     for pair in matchedParts:
-        tmp = x[pair[0], :].clone()
+        tmp = x[pair[0], :].copy()
         x[pair[0], :] = x[pair[1], :]
         x[pair[1], :] = tmp
 
@@ -142,7 +145,7 @@ def crop(img, center, scale, res, rot=0):
             return torch.zeros(res[0], res[1], img.shape[2]) \
                 if len(img.shape) > 2 else torch.zeros(res[0], res[1])
         else:
-            img = scipy.misc.imresize(img, [new_ht, new_wd])
+            img = np.array(Image.fromarray(img).resize([new_ht, new_wd]))
             center = center * 1. / sf
             scale = scale / sf
 
@@ -172,8 +175,13 @@ def crop(img, center, scale, res, rot=0):
 
     if not rot == 0:
         # Remove padding
-        new_img = scipy.misc.imrotate(new_img, rot)
+        new_img = st.rotate(new_img, rot)
         new_img = new_img[pad:-pad, pad:-pad]
 
-    new_img = im_to_torch(scipy.misc.imresize(new_img, res))
+    # print("")
+    # print("res: ", res)
+    # print(new_img.shape)
+    # print(new_img.dtype)
+    pil_image = Image.fromarray(new_img.astype('uint8'))
+    new_img = im_to_torch(np.array(pil_image.resize(res)))
     return new_img

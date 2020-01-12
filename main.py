@@ -194,8 +194,8 @@ def train(loader, model, criterion, optimizer, netType, debug=False, flip=False)
         for o in output:
             loss += criterion(o, target_var)
         acc, _ = accuracy(score_map, target.cpu(), idx, thr=0.07)
-
-        losses.update(loss.data[0], inputs.size(0))
+        #print(loss.size())
+        losses.update(loss.item(), inputs.size(0))
         acces.update(acc[0], inputs.size(0))
 
         optimizer.zero_grad()
@@ -275,7 +275,7 @@ def validate(loader, model, criterion, netType, debug, flip):
             plt.pause(.05)
             plt.draw()
 
-        losses.update(loss.data[0], inputs.size(0))
+        losses.update(loss.item(), inputs.size(0))
         acces.update(acc[0], inputs.size(0))
 
         batch_time.update(time.time() - end)
