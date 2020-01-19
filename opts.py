@@ -41,6 +41,7 @@ def argparser():
     P.add_argument('--flip', action='store_true', help='Flip input image')
     P.add_argument(
         '--start-epoch', default=0, type=int, help='manual epoch number (useful on restarts)')
+    P.add_argument('--amp', type=str, default=None, help='AMP level')
     args = P.parse_args()
 
     return args

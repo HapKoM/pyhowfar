@@ -19,7 +19,16 @@ from utils.evaluation import accuracy, AverageMeter, final_preds, calc_metrics, 
 from utils.misc import adjust_learning_rate, save_checkpoint, save_pred
 import opts
 
+try:
+    from apex.parallel import DistributedDataParallel as DDP
+    from apex.fp16_utils import *
+    from apex import amp, optimizers
+    from apex.multi_tensor_apply import multi_tensor_applier
+except ImportError:
+    raise ImportError("Please install apex from https://www.github.com/nvidia/apex to run this example.")
+
 args = opts.argparser()
+args.imsize = 256
 model_names = sorted(
     name for name in models.__dict__
     if name.islower() and not name.startswith("__") and callable(models.__dict__[name]))
@@ -58,13 +67,19 @@ def main(args):
         use_se=args.use_se,
         use_attention=args.use_attention,
         num_classes=68)
-
-    model = torch.nn.DataParallel(model).cuda()
+    
+    model = model.cuda()
 
     criterion = torch.nn.MSELoss(size_average=True).cuda()
 
     optimizer = torch.optim.RMSprop(
         model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    
+    if args.amp:
+        model, optimizer = amp.initialize(model, optimizer,
+                                    opt_level=args.amp)
+
+    model = torch.nn.DataParallel(model)
 
     title = args.checkpoint.split('/')[-1] + ' on ' + args.data.split('/')[-1]
 
@@ -128,6 +143,9 @@ def main(args):
 
         is_best = valid_auc >= best_auc
         best_auc = max(valid_auc, best_auc)
+        amp_dict = {}
+        if args.amp:
+            amp_dict = amp.state_dict()
         save_checkpoint(
             {
                 'epoch': epoch + 1,
@@ -135,6 +153,7 @@ def main(args):
                 'state_dict': model.state_dict(),
                 'best_acc': best_auc,
                 'optimizer': optimizer.state_dict(),
+                'amp': amp_dict,
             },
             is_best,
             predictions,
@@ -199,7 +218,11 @@ def train(loader, model, criterion, optimizer, netType, debug=False, flip=False)
         acces.update(acc[0], inputs.size(0))
 
         optimizer.zero_grad()
-        loss.backward()
+        if args.amp:
+            with amp.scale_loss(loss, optimizer) as scaled_loss:
+                scaled_loss.backward()
+        else:
+            loss.backward()
         optimizer.step()
 
         batch_time.update(time.time() - end)
